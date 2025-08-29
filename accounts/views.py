@@ -7,6 +7,7 @@ from .serializers import RegisterSerializer, CustomTokenObtainPairSerializer
 from django.shortcuts import render, redirect
 from .forms import RegisterForm, LoginForm
 import requests
+from django.http import JsonResponse
 
 API_URL = "http://127.0.0.1:8000/api/auth/" 
 
@@ -48,6 +49,7 @@ def register_page(request):
     return render(request, "accounts/register.html", {"form": form})
 
 
+
 def login_page(request):
     if request.method == "POST":
         form = LoginForm(request.POST)
@@ -58,10 +60,13 @@ def login_page(request):
                 tokens = response.json()
                 request.session["access"] = tokens["access"]
                 request.session["refresh"] = tokens["refresh"]
-                return redirect("dashboard")  # a protected page
+                return JsonResponse({"success": True, "message": "Login successful!"})
             else:
-                form.add_error(None, response.json())
+                return JsonResponse({"success": False, "message": "Invalid credentials"}, status=400)
+        else:
+            return JsonResponse({"success": False, "message": "Form invalid"}, status=400)
+
     else:
         form = LoginForm()
-    return render(request, "accounts/login.html", {"form": form})
+        return render(request, "accounts/login.html", {"form": form})
 
