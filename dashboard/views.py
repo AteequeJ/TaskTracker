@@ -9,4 +9,8 @@ from django.shortcuts import render, redirect
 def dashboard_home(request):
     if "access" not in request.session:
         return redirect("login_page")   # 👈 your custom login view name
-    return render(request, "dashboard/home.html")
+
+    return render(request, "dashboard/home.html", {
+        "access": request.session.get("access"),
+        "refresh": request.session.get("refresh"),
+    })

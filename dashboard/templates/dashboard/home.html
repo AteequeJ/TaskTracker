@@ -2,39 +2,347 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Task Tracker Dashboard</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Notes Dashboard</title>
+  <script>
+  let accessToken = "{{ access|escapejs }}";
+  const refreshToken = "{{ refresh|escapejs }}";
+</script>
+  <style>
+    /* === Sidebar === */
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f5f6fa;
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
+    .dashboard { display: flex; width: 100%; height: 100%; }
+    .sidebar {
+      background: #2f3542;
+      color: white;
+      width: 240px;
+      display: flex;
+      flex-direction: column;
+      padding: 20px;
+    }
+    .profile { display: flex; align-items: center; margin-bottom: 30px; }
+    .profile-avatar {
+      background: #57606f; border-radius: 50%; width: 40px; height: 40px;
+      display: flex; align-items: center; justify-content: center;
+      margin-right: 10px; font-weight: bold; font-size: 16px;
+    }
+    .profile-name { font-size: 16px; font-weight: 600; }
+    .nav-menu { flex-grow: 1; }
+    .nav-item {
+      padding: 10px 0; cursor: pointer; font-size: 15px; color: #dfe4ea;
+    }
+    .nav-item.active { color: #70a1ff; font-weight: bold; }
+
+    /* === Notes Panel === */
+    .notes-panel {
+      background: #f1f2f6; width: 300px; padding: 20px; overflow-y: auto;
+      border-right: 1px solid #dcdde1;
+    }
+    .panel-header { margin-bottom: 20px; }
+    .search-box {
+      width: 100%; padding: 10px; border-radius: 6px;
+      border: 1px solid #ced6e0; outline: none;
+    }
+    .notes-section { margin-bottom: 20px; }
+    .section-title {
+      font-size: 14px; font-weight: bold; margin-bottom: 10px; color: #2f3542;
+    }
+    .note-item {
+      background: white; padding: 12px; border-radius: 8px; margin-bottom: 10px;
+      cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    .note-item:hover { background: #f1f2f6; }
+    .note-title { font-size: 14px; font-weight: 600; margin-bottom: 5px; }
+    .note-preview { font-size: 13px; color: #57606f; }
+    .note-meta { font-size: 12px; color: #a4b0be; margin-top: 5px; }
+
+    /* === Main Content === */
+    .main-content {
+      flex-grow: 1; padding: 20px; background: white; overflow-y: auto;
+    }
+    .content-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 20px;
+    }
+    .content-title {
+      display: flex; align-items: center; font-size: 20px; font-weight: bold;
+    }
+    .hash-icon { margin-right: 5px; color: #70a1ff; }
+    .author-info { font-size: 13px; color: #747d8c; margin-left: 15px; }
+    .content-toolbar { display: flex; gap: 10px; }
+    .toolbar-btn {
+      background: #f1f2f6; border: none; border-radius: 6px;
+      padding: 6px 10px; cursor: pointer;
+    }
+    .content-body { font-size: 15px; line-height: 1.6; color: #2f3542; }
+
+    .new-page-btn {
+      background: #e0e0e0;
+      padding: 10px;
+      text-align: center;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-top: 10px;
+      font-weight: bold;
+    }
+    .new-page-btn:hover {
+      background: #d0d0d0;
+    }
+
+    .todo-item { margin: 5px 0; display: flex; align-items: center; gap: 8px; }
+    .todo-item span { flex-grow: 1; }
+    .todo-item .delete-btn { border: none; background: none; cursor: pointer; }
+  </style>
 </head>
-<body class="h-screen flex bg-gray-100">
-  
-  <!-- Sidebar -->
-  <aside class="w-64 bg-white shadow-lg flex flex-col">
-    <div class="p-4 text-xl font-bold border-b">Task Tracker</div>
-    <nav class="flex-1 p-4 space-y-2">
-      <a href="#" class="block px-3 py-2 rounded hover:bg-gray-200">📋 Tasks</a>
-      <a href="#" class="block px-3 py-2 rounded hover:bg-gray-200">📂 Projects</a>
-      <a href="#" class="block px-3 py-2 rounded hover:bg-gray-200">📅 Calendar</a>
-      <a href="#" class="block px-3 py-2 rounded hover:bg-gray-200">⚙️ Settings</a>
-    </nav>
-    <div class="p-4 border-t">
-      <span class="text-gray-500 text-sm">Logged in as {{ user.email }}</span>
-    </div>
-  </aside>
 
-  <!-- Main content -->
-  <main class="flex-1 p-6 overflow-y-auto">
-    <h1 class="text-2xl font-bold mb-4">Dashboard</h1>
-    
-    <!-- Example content: Task list -->
-    <div class="bg-white shadow rounded p-4">
-      <h2 class="text-lg font-semibold mb-2">My Tasks</h2>
-      <ul class="space-y-2">
-        <li class="p-2 bg-gray-50 rounded hover:bg-gray-100">✅ Task 1</li>
-        <li class="p-2 bg-gray-50 rounded hover:bg-gray-100">🔲 Task 2</li>
-        <li class="p-2 bg-gray-50 rounded hover:bg-gray-100">🔲 Task 3</li>
-      </ul>
+<body>
+  <div class="dashboard">
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="profile">
+        <div class="profile-avatar" id="profile-avatar">U</div>
+        <div class="profile-name" id="profile-name">User</div>
+      </div>
+      <div class="nav-menu">
+        <div class="nav-item active" data-view="dashboard">🏠 Dashboard</div>
+        <div class="nav-item" data-view="pages">📝 Pages</div>
+        <div class="nav-item" data-view="todos">✅ Todos</div>
+      </div>
     </div>
-  </main>
 
+    <!-- Notes Panel -->
+    <div class="notes-panel">
+      <div class="panel-header">
+        <input type="text" placeholder="Search..." class="search-box" id="search-box">
+      </div>
+
+      <div class="notes-section">
+        <div class="section-title" id="section-title">Pages</div>
+        <div id="notes-list"></div>
+        <div class="new-page-btn" id="new-page-btn">+ New Page</div>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+      <div class="content-header">
+        <div class="content-title">
+          <span class="hash-icon">#</span>
+          <span class="title-text" id="main-title">Welcome</span>
+        </div>
+        <div class="author-info" id="main-meta"></div>
+        <div class="content-toolbar"></div>
+      </div>
+      <div class="content-body" id="main-content-body">
+        <p>Select Pages or Todos from the sidebar.</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const notesList = document.getElementById("notes-list");
+    const sectionTitle = document.getElementById("section-title");
+    const mainTitle = document.getElementById("main-title");
+    const mainMeta = document.getElementById("main-meta");
+    const mainContentBody = document.getElementById("main-content-body");
+
+    // === Sidebar Navigation ===
+    document.querySelectorAll(".nav-item").forEach(item => {
+      item.addEventListener("click", () => {
+        document.querySelectorAll(".nav-item").forEach(i => i.classList.remove("active"));
+        item.classList.add("active");
+        const view = item.dataset.view;
+        if (view === "pages") loadPages();
+        else if (view === "todos") loadTodos();
+        else showDashboard();
+      });
+    });
+
+    // === Dashboard default ===
+    function showDashboard() {
+      sectionTitle.innerText = "Welcome";
+      notesList.innerHTML = "";
+      mainTitle.innerText = "Dashboard";
+      mainMeta.innerText = "";
+      mainContentBody.innerHTML = `<p>This is your dashboard. Use the sidebar to explore Pages or Todos.</p>`;
+    }
+
+    // === Render Pages List ===
+    async function loadPages() {
+      try {
+        const response = await fetch("/api/workspace/pages/", {
+          headers: { "Authorization": `Bearer ${accessToken}` }
+        });
+        if (!response.ok) throw new Error("Failed to fetch pages");
+        const pages = await response.json();
+        renderPages(pages);
+      } catch (error) {
+        console.error("Error loading pages:", error);
+      }
+    }
+
+    function renderPages(pages) {
+      notesList.innerHTML = "";
+      pages.forEach(page => {
+        const item = document.createElement("div");
+        item.classList.add("note-item");
+        item.dataset.id = page.id;
+        item.innerHTML = `
+          <div class="note-title">${page.title}</div>
+          <div class="note-preview">${page.content ? page.content.substring(0, 50) + "..." : "No content"}</div>
+          <div class="note-meta">
+            <span class="note-date">${new Date(page.updated_at).toLocaleDateString()}</span>
+          </div>
+        `;
+        item.addEventListener("click", () => {
+          document.querySelectorAll(".note-item").forEach(el => el.classList.remove("active"));
+          item.classList.add("active");
+          renderPageEditor(page);
+        });
+        notesList.appendChild(item);
+      });
+    }
+
+    // === Render Page Editor ===
+    function renderPageEditor(page) {
+      const toolbar = document.querySelector(".content-toolbar");
+      mainTitle.innerText = page.title;
+      mainContentBody.innerHTML = `
+        <input id="page-title-input" value="${page.title}" style="font-size:20px; font-weight:bold; border:none; outline:none; width:100%;" />
+        <textarea id="page-content-input" style="width:100%; height:200px; border:none; outline:none; font-size:15px; margin-top:10px;">${page.content || ""}</textarea>
+        <h3>✅ Todos</h3>
+        <div id="todo-container"></div>
+      `;
+      toolbar.innerHTML = `<button class="toolbar-btn" id="save-page-btn">💾 Save</button>`;
+
+      document.getElementById("save-page-btn").addEventListener("click", async () => {
+        await fetch(`/api/workspace/pages/${page.id}/`, {
+          method: "PATCH",
+          headers: { "Authorization": `Bearer ${accessToken}`, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title: document.getElementById("page-title-input").value,
+            content: document.getElementById("page-content-input").value
+          })
+        });
+        loadPages();
+      });
+
+      loadTodosForPage(page.id);
+    }
+
+    // === Page-specific Todos ===
+    async function loadTodosForPage(pageId) {
+      try {
+        const res = await fetch(`/api/workspace/todos/?page=${pageId}`, {
+          headers: { "Authorization": `Bearer ${accessToken}` }
+        });
+        const todos = await res.json();
+        renderTodos(todos, pageId);
+      } catch (err) {
+        console.error("Error loading todos:", err);
+      }
+    }
+
+    function renderTodos(todos, pageId) {
+      const container = document.getElementById("todo-container");
+      container.innerHTML = "";
+      todos.forEach(todo => {
+        const item = document.createElement("div");
+        item.className = "todo-item";
+        item.innerHTML = `
+          <input type="checkbox" ${todo.completed ? "checked" : ""} />
+          <span contenteditable="true">${todo.title}</span>
+          <button class="delete-btn">🗑️</button>
+        `;
+        item.querySelector("input").addEventListener("change", e => {
+          updateTodo(todo.id, { completed: e.target.checked });
+        });
+        item.querySelector("span").addEventListener("blur", e => {
+          updateTodo(todo.id, { title: e.target.textContent });
+        });
+        item.querySelector(".delete-btn").addEventListener("click", () => {
+          deleteTodo(todo.id, pageId);
+        });
+        container.appendChild(item);
+      });
+      const input = document.createElement("input");
+      input.type = "text";
+      input.placeholder = "➕ Add todo...";
+      input.style = "width:100%; padding:5px;";
+      input.addEventListener("keypress", e => {
+        if (e.key === "Enter" && e.target.value.trim()) {
+          createTodo(pageId, e.target.value.trim());
+          e.target.value = "";
+        }
+      });
+      container.appendChild(input);
+    }
+
+    async function createTodo(pageId, title) {
+      await fetch("/api/workspace/todos/", {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${accessToken}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ title, page: pageId })
+      });
+      loadTodosForPage(pageId);
+    }
+
+    async function updateTodo(id, data) {
+      await fetch(`/api/workspace/todos/${id}/`, {
+        method: "PATCH",
+        headers: { "Authorization": `Bearer ${accessToken}`, "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+      });
+    }
+
+    async function deleteTodo(id, pageId) {
+      await fetch(`/api/workspace/todos/${id}/`, {
+        method: "DELETE",
+        headers: { "Authorization": `Bearer ${accessToken}` }
+      });
+      loadTodosForPage(pageId);
+    }
+
+    // === New Page ===
+    document.getElementById("new-page-btn").addEventListener("click", async () => {
+      try {
+        const res = await fetch("/api/workspace/pages/", {
+          method: "POST",
+          headers: { "Authorization": `Bearer ${accessToken}`, "Content-Type": "application/json" },
+          body: JSON.stringify({ title: "Untitled Page", content: "" })
+        });
+        const newPage = await res.json();
+        renderPageEditor(newPage);
+        loadPages();
+      } catch (err) {
+        console.error("Error creating page:", err);
+      }
+    });
+
+    // === Global Todos View ===
+    async function loadTodos() {
+      sectionTitle.innerText = "All Todos";
+      notesList.innerHTML = "<p>Loading...</p>";
+      const res = await fetch("/api/workspace/todos/", { headers: { "Authorization": `Bearer ${accessToken}` } });
+      const todos = await res.json();
+      notesList.innerHTML = "";
+      todos.forEach(t => {
+        let item = document.createElement("div");
+        item.className = "note-item";
+        item.innerHTML = `<div class="note-title">${t.title}</div><div class="note-meta">${t.completed ? "✅ Done" : "⏳ Pending"}</div>`;
+        notesList.appendChild(item);
+      });
+    }
+
+    document.addEventListener("DOMContentLoaded", loadPages);
+    showDashboard();
+  </script>
 </body>
 </html>
